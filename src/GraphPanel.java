@@ -5,28 +5,39 @@ import java.awt.event.MouseMotionAdapter;
 import java.awt.event.MouseEvent;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.HashMap;
 
+/**
+ * GraphPanel is a JPanel that draws various mathematical functions and finds their intersection points.
+ */
 public class GraphPanel extends JPanel {
-
-    private double A = 1.0;
-    private double B = 10.0;
-    private double C = 0.1;
-    private double scale = 2;
+    private double sinA = 1.0, sinB = 10.0, sinC = 0.1;
+    private double cosA = 1.0, cosB = 10.0, cosC = 0.1;
+    private double tanA = 1.0, tanB = 10.0, tanC = 0.1;
+    private double ctanA = 1.0, ctanB = 10.0, ctanC = 0.1;
+    private double parabolaA = 1.0, parabolaB = 10.0, parabolaC = 0.1;
+    private double hyperbolaA = 1.0, hyperbolaB = 10.0, hyperbolaC = 0.1;
+    private double expA = 1.0, expB = 10.0, expC = 0.1;
+    private double logA = 1.0, logB = 10.0, logC = 0.1;
     private double radius = 5.0;
+    private double scale = 2;
 
-    private boolean drawSin = false;
-    private boolean drawCos = false;
-    private boolean drawTan = false;
-    private boolean drawCtan = false;
-    private boolean drawParabola = false;
-    private boolean drawHyperbola = false;
-    private boolean drawEllipse = false;
-    private boolean drawCircle = false;
-    private boolean drawExp = false;
-    private boolean drawLog = false;
+    public boolean drawSin = false;
+    public boolean drawCos = false;
+    public boolean drawTan = false;
+    public boolean drawCtan = false;
+    public boolean drawParabola = false;
+    public boolean drawHyperbola = false;
+    public boolean drawEllipse = false;
+    public boolean drawCircle = false;
+    public boolean drawExp = false;
+    public boolean drawLog = false;
 
-    private final List<IntersectionPoint> intersections = new ArrayList<>();
+    private List<IntersectionPoint> intersections = new ArrayList<>();
     private IntersectionPoint hoveredPoint;
+
+    public Map<String, JPanel> functionPanels = new HashMap<>();
 
     public GraphPanel() {
         addMouseWheelListener(e -> {
@@ -54,72 +65,16 @@ public class GraphPanel extends JPanel {
         });
     }
 
-    static class IntersectionPoint extends Point {
+    /**
+     * Inner class representing an intersection point of two functions.
+     */
+    class IntersectionPoint extends Point {
         double xValue, yValue;
 
         IntersectionPoint(int x, int y, double xValue, double yValue) {
             super(x, y);
             this.xValue = xValue;
             this.yValue = yValue;
-        }
-    }
-
-    /**
-     * Draws a function on the panel.
-     * @param g2 The Graphics2D object for drawing.
-     * @param color The color of the function curve.
-     * @param function The mathematical function to draw.
-     * @param points List of points for calculating intersections.
-     */
-    private void drawFunction(Graphics2D g2, Color color, Function<Double, Double> function, List<Point> points) {
-        g2.setColor(color);
-        g2.setStroke(new BasicStroke(2.0f));
-
-        int numPoints = getWidth() * 50;
-        Point prevPoint = null;
-        for (int i = 0; i < numPoints; i++) {
-            double x = (i - (double) getWidth() / 2) / scale;
-            double y = function.apply(x);
-            int yPos = (int) (getHeight() / 2 - scale * y);
-            points.add(new Point(i, yPos));
-            if (prevPoint != null && Math.abs(yPos - prevPoint.y) < getHeight()) {
-                g2.draw(new Line2D.Double(prevPoint.x, prevPoint.y, i, yPos));
-            }
-            prevPoint = new Point(i, yPos);
-        }
-    }
-
-    /**
-     * Finds all intersection points between the functions drawn.
-     * @param functionPoints A list of lists of points for each function.
-     * @param functions A list of the functions being drawn.
-     */
-    private void findAllIntersections(List<List<Point>> functionPoints, List<Function<Double, Double>> functions) {
-        for (int i = 0; i < functionPoints.size(); i++) {
-            for (int j = i + 1; j < functionPoints.size(); j++) {
-                findIntersections(functionPoints.get(i), functionPoints.get(j), functions.get(i), functions.get(j));
-            }
-        }
-    }
-
-    /**
-     * Finds intersection points between two sets of points that represent functions.
-     * @param first List of points for the first function.
-     * @param second List of points for the second function.
-     * @param firstFunction Mathematical function for the first set of points.
-     * @param secondFunction Mathematical function for the second set of points.
-     */
-    private void findIntersections(List<Point> first, List<Point> second, Function<Double, Double> firstFunction, Function<Double, Double> secondFunction) {
-        for (int i = 1; i < first.size(); i++) {
-            if ((first.get(i-1).y - second.get(i-1).y) * (first.get(i).y - second.get(i).y) <= 0) {
-                int midX = (first.get(i).x + first.get(i-1).x) / 2;
-                double xValue = (midX - (double) getWidth() / 2) / scale;
-                double firstY = firstFunction.apply(xValue);
-                double secondY = secondFunction.apply(xValue);
-                double yValue = (firstY + secondY) / 2;
-                int midY = (int) (getHeight() / 2 - scale * yValue);
-                intersections.add(new IntersectionPoint(midX, midY, xValue, yValue));
-            }
         }
     }
 
@@ -132,7 +87,7 @@ public class GraphPanel extends JPanel {
         g2.drawLine(0, getHeight() / 2, getWidth(), getHeight() / 2);
         g2.drawLine(getWidth() / 2, 0, getWidth() / 2, getHeight());
 
-        drawTicks(g2);
+        GraphUtils.drawTicks(g2, getWidth(), getHeight(), scale);
 
         intersections.clear();
         List<Point> sinPoints = new ArrayList<>();
@@ -149,53 +104,53 @@ public class GraphPanel extends JPanel {
         List<Function<Double, Double>> functions = new ArrayList<>();
 
         if (drawSin) {
-            drawFunction(g2, Color.RED, x -> A + B * Math.sin(C * x), sinPoints);
+            GraphUtils.drawFunction(g2, Color.RED, x -> sinA + sinB * Math.sin(sinC * x), sinPoints, getWidth(), getHeight(), scale);
             functionPoints.add(sinPoints);
-            functions.add(x -> A + B * Math.sin(C * x));
+            functions.add(x -> sinA + sinB * Math.sin(sinC * x));
         }
         if (drawCos) {
-            drawFunction(g2, Color.BLUE, x -> A + B * Math.cos(C * x), cosPoints);
+            GraphUtils.drawFunction(g2, Color.BLUE, x -> cosA + cosB * Math.cos(cosC * x), cosPoints, getWidth(), getHeight(), scale);
             functionPoints.add(cosPoints);
-            functions.add(x -> A + B * Math.cos(C * x));
+            functions.add(x -> cosA + cosB * Math.cos(cosC * x));
         }
         if (drawTan) {
-            drawFunction(g2, Color.GREEN, x -> A + B * Math.tan(C * x), tanPoints);
+            GraphUtils.drawFunction(g2, Color.GREEN, x -> tanA + tanB * Math.tan(tanC * x), tanPoints, getWidth(), getHeight(), scale);
             functionPoints.add(tanPoints);
-            functions.add(x -> A + B * Math.tan(C * x));
+            functions.add(x -> tanA + tanB * Math.tan(tanC * x));
         }
         if (drawCtan) {
-            drawFunction(g2, Color.ORANGE, x -> A + B / Math.tan(C * x), ctanPoints);
+            GraphUtils.drawFunction(g2, Color.ORANGE, x -> ctanA + ctanB / Math.tan(ctanC * x), ctanPoints, getWidth(), getHeight(), scale);
             functionPoints.add(ctanPoints);
-            functions.add(x -> A + B / Math.tan(C * x));
+            functions.add(x -> ctanA + ctanB / Math.tan(ctanC * x));
         }
         if (drawParabola) {
-            drawFunction(g2, Color.MAGENTA, x -> A * x * x + B * x + C, parabolaPoints);
+            GraphUtils.drawFunction(g2, Color.MAGENTA, x -> parabolaA * x * x + parabolaB * x + parabolaC, parabolaPoints, getWidth(), getHeight(), scale);
             functionPoints.add(parabolaPoints);
-            functions.add(x -> A * x * x + B * x + C);
+            functions.add(x -> parabolaA * x * x + parabolaB * x + parabolaC);
         }
         if (drawHyperbola) {
-            drawFunction(g2, Color.CYAN, x -> B / (C * x), hyperbolaPoints);
+            GraphUtils.drawFunction(g2, Color.CYAN, x -> hyperbolaA / (hyperbolaB * x), hyperbolaPoints, getWidth(), getHeight(), scale);
             functionPoints.add(hyperbolaPoints);
-            functions.add(x -> B / (C * x));
+            functions.add(x -> hyperbolaA / (hyperbolaB * x));
         }
         if (drawEllipse) {
-            drawEllipse(g2, ellipsePoints);
+            GraphUtils.drawEllipse(g2, ellipsePoints, getWidth(), getHeight(), sinA, sinB, scale);
         }
         if (drawCircle) {
-            drawCircle(g2, circlePoints);
+            GraphUtils.drawCircle(g2, circlePoints, getWidth(), getHeight(), sinA, sinB, radius, scale);
         }
         if (drawExp) {
-            drawFunction(g2, Color.YELLOW, x -> A * Math.exp(B * x), expPoints);
+            GraphUtils.drawFunction(g2, Color.YELLOW, x -> expA * Math.exp(expB * x), expPoints, getWidth(), getHeight(), scale);
             functionPoints.add(expPoints);
-            functions.add(x -> A * Math.exp(B * x));
+            functions.add(x -> expA * Math.exp(expB * x));
         }
         if (drawLog) {
-            drawFunction(g2, new Color(100, 50, 200), x -> A * Math.log(B * x), logPoints);
+            GraphUtils.drawFunction(g2, new Color(100, 50, 200), x -> logA * Math.log(logB * x), logPoints, getWidth(), getHeight(), scale);
             functionPoints.add(logPoints);
-            functions.add(x -> A * Math.log(B * x));
+            functions.add(x -> logA * Math.log(logB * x));
         }
 
-        findAllIntersections(functionPoints, functions);
+        GraphUtils.findAllIntersections(intersections, functionPoints, functions, getWidth(), getHeight(), scale);
 
         if (hoveredPoint != null) {
             g2.setColor(Color.GRAY);
@@ -205,179 +160,148 @@ public class GraphPanel extends JPanel {
         }
     }
 
-    /**
-     * Draws tick marks along the axes.
-     * @param g2 The Graphics2D object for drawing.
-     */
-    private void drawTicks(Graphics2D g2) {
-        int centerX = getWidth() / 2;
-        int centerY = getHeight() / 2;
-        int pixelsPerTick = (int) (50 * scale);
-
-        int startOffsetX = centerX % pixelsPerTick;
-        for (int x = startOffsetX; x < getWidth(); x += pixelsPerTick) {
-            g2.drawLine(x, centerY - 5, x, centerY + 5);
-            int tickLabel = (x - centerX) / pixelsPerTick * 50;
-            g2.drawString(Integer.toString(tickLabel), x - 10, centerY + 20);
+    public void updateSliders(String function, JSlider sliderA, JSlider sliderB, JSlider sliderC) {
+        switch (function) {
+            case "sin":
+                sliderA.setValue((int) sinA);
+                sliderB.setValue((int) sinB);
+                sliderC.setValue((int) sinC);
+                break;
+            case "cos":
+                sliderA.setValue((int) cosA);
+                sliderB.setValue((int) cosB);
+                sliderC.setValue((int) cosC);
+                break;
+            case "tan":
+                sliderA.setValue((int) tanA);
+                sliderB.setValue((int) tanB);
+                sliderC.setValue((int) tanC);
+                break;
+            case "ctan":
+                sliderA.setValue((int) ctanA);
+                sliderB.setValue((int) ctanB);
+                sliderC.setValue((int) ctanC);
+                break;
+            case "parabola":
+                sliderA.setValue((int) parabolaA);
+                sliderB.setValue((int) parabolaB);
+                sliderC.setValue((int) parabolaC);
+                break;
+            case "hyperbola":
+                sliderA.setValue((int) hyperbolaA);
+                sliderB.setValue((int) hyperbolaB);
+                sliderC.setValue((int) hyperbolaC);
+                break;
+            case "exp":
+                sliderA.setValue((int) expA);
+                sliderB.setValue((int) expB);
+                sliderC.setValue((int) expC);
+                break;
+            case "log":
+                sliderA.setValue((int) logA);
+                sliderB.setValue((int) logB);
+                sliderC.setValue((int) logC);
+                break;
+            case "circle":
+                sliderA.setVisible(false);
+                sliderB.setVisible(false);
+                sliderC.setVisible(false);
+                break;
         }
+    }
 
-        int startOffsetY = centerY % pixelsPerTick;
-        for (int y = startOffsetY; y < getHeight(); y += pixelsPerTick) {
-            g2.drawLine(centerX - 5, y, centerX + 5, y);
-            int tickLabel = (centerY - y) / pixelsPerTick * 50;
-            g2.drawString(Integer.toString(tickLabel), centerX + 10, y + 5);
+    public void setA(String function, double a) {
+        switch (function) {
+            case "sin":
+                this.sinA = a;
+                break;
+            case "cos":
+                this.cosA = a;
+                break;
+            case "tan":
+                this.tanA = a;
+                break;
+            case "ctan":
+                this.ctanA = a;
+                break;
+            case "parabola":
+                this.parabolaA = a;
+                break;
+            case "hyperbola":
+                this.hyperbolaA = a;
+                break;
+            case "exp":
+                this.expA = a;
+                break;
+            case "log":
+                this.logA = a;
+                break;
         }
+        repaint();
     }
 
-    /**
-     * Draws an ellipse centered at the panel's center, adjusted for scale and coefficients A and B.
-     * @param g2 The Graphics2D object for drawing.
-     * @param points The list of points for intersection logic.
-     */
-    private void drawEllipse(Graphics2D g2, List<Point> points) {
-        g2.setColor(Color.PINK);
-        int x = getWidth() / 2 - (int) (A * scale);
-        int y = getHeight() / 2 - (int) (B * scale);
-        int width = 2 * (int) (A * scale);
-        int height = 2 * (int) (B * scale);
-        g2.drawOval(x, y, width, height);
-        points.add(new Point(x, y));
+    public void setB(String function, double b) {
+        switch (function) {
+            case "sin":
+                this.sinB = b;
+                break;
+            case "cos":
+                this.cosB = b;
+                break;
+            case "tan":
+                this.tanB = b;
+                break;
+            case "ctan":
+                this.ctanB = b;
+                break;
+            case "parabola":
+                this.parabolaB = b;
+                break;
+            case "hyperbola":
+                this.hyperbolaB = b;
+                break;
+            case "exp":
+                this.expB = b;
+                break;
+            case "log":
+                this.logB = b;
+                break;
+        }
+        repaint();
     }
 
-    /**
-     * Draws a circle based on the radius specified by the 'radius' variable, adjusted for scale.
-     * @param g2 The Graphics2D object for drawing.
-     * @param points The list of points for intersection logic.
-     */
-    private void drawCircle(Graphics2D g2, List<Point> points) {
-        g2.setColor(Color.BLACK);
-        int r = (int) (radius * scale);
-        int x = getWidth() / 2 - r + (int) (A * scale);
-        int y = getHeight() / 2 - r + (int) (B * scale);
-        g2.drawOval(x, y, 2 * r, 2 * r);
-        points.add(new Point(x + r, y + r));
+    public void setC(String function, double c) {
+        switch (function) {
+            case "sin":
+                this.sinC = c;
+                break;
+            case "cos":
+                this.cosC = c;
+                break;
+            case "tan":
+                this.tanC = c;
+                break;
+            case "ctan":
+                this.ctanC = c;
+                break;
+            case "parabola":
+                this.parabolaC = c;
+                break;
+            case "hyperbola":
+                this.hyperbolaC = c;
+                break;
+            case "exp":
+                this.expC = c;
+                break;
+            case "log":
+                this.logC = c;
+                break;
+        }
+        repaint();
     }
 
-    public static void main(String[] args) {
-        JFrame frame = new JFrame("GraphPanel");
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setSize(800, 600);
-        frame.setLocationRelativeTo(null);
-
-        GraphPanel graphPanel = new GraphPanel();
-        frame.add(graphPanel, BorderLayout.CENTER);
-
-        JPanel sliderPanel = new JPanel();
-        sliderPanel.setLayout(new BoxLayout(sliderPanel, BoxLayout.Y_AXIS));
-
-        JSlider sliderA = new JSlider(-10, 10, 1);
-        sliderA.addChangeListener(e -> {
-            graphPanel.A = sliderA.getValue();
-            graphPanel.repaint();
-        });
-        sliderPanel.add(new JLabel("A"));
-        sliderPanel.add(sliderA);
-
-        JSlider sliderB = new JSlider(-10, 10, 10);
-        sliderB.addChangeListener(e -> {
-            graphPanel.B = sliderB.getValue();
-            graphPanel.repaint();
-        });
-        sliderPanel.add(new JLabel("B"));
-        sliderPanel.add(sliderB);
-
-        JSlider sliderC = new JSlider(-10, 10, 1);
-        sliderC.addChangeListener(e -> {
-            graphPanel.C = sliderC.getValue();
-            graphPanel.repaint();
-        });
-        sliderPanel.add(new JLabel("C"));
-        sliderPanel.add(sliderC);
-
-        JSlider sliderRadius = new JSlider(0, 10, 5);
-        sliderRadius.addChangeListener(e -> {
-            graphPanel.radius = sliderRadius.getValue();
-            graphPanel.repaint();
-        });
-        sliderPanel.add(new JLabel("Radius"));
-        sliderPanel.add(sliderRadius);
-
-        JCheckBox checkBoxSin = new JCheckBox("sin", false);
-        checkBoxSin.addActionListener(e -> {
-            graphPanel.drawSin = checkBoxSin.isSelected();
-            graphPanel.repaint();
-        });
-        sliderPanel.add(checkBoxSin);
-
-        JCheckBox checkBoxCos = new JCheckBox("cos", false);
-        checkBoxCos.addActionListener(e -> {
-            graphPanel.drawCos = checkBoxCos.isSelected();
-            graphPanel.repaint();
-        });
-        sliderPanel.add(checkBoxCos);
-
-        JCheckBox checkBoxTan = new JCheckBox("tan", false);
-        checkBoxTan.addActionListener(e -> {
-            graphPanel.drawTan = checkBoxTan.isSelected();
-            graphPanel.repaint();
-        });
-        sliderPanel.add(checkBoxTan);
-
-        JCheckBox checkBoxCtan = new JCheckBox("ctan", false);
-        checkBoxCtan.addActionListener(e -> {
-            graphPanel.drawCtan = checkBoxCtan.isSelected();
-            graphPanel.repaint();
-        });
-        sliderPanel.add(checkBoxCtan);
-
-        JCheckBox checkBoxParabola = new JCheckBox("Parabola", false);
-        checkBoxParabola.addActionListener(e -> {
-            graphPanel.drawParabola = checkBoxParabola.isSelected();
-            graphPanel.repaint();
-        });
-        sliderPanel.add(checkBoxParabola);
-
-        JCheckBox checkBoxHyperbola = new JCheckBox("Hyperbola", false);
-        checkBoxHyperbola.addActionListener(e -> {
-            graphPanel.drawHyperbola = checkBoxHyperbola.isSelected();
-            graphPanel.repaint();
-        });
-        sliderPanel.add(checkBoxHyperbola);
-
-        JCheckBox checkBoxEllipse = new JCheckBox("Ellipse", false);
-        checkBoxEllipse.addActionListener(e -> {
-            graphPanel.drawEllipse = checkBoxEllipse.isSelected();
-            graphPanel.repaint();
-        });
-        sliderPanel.add(checkBoxEllipse);
-
-        JCheckBox checkBoxCircle = new JCheckBox("Circle", false);
-        checkBoxCircle.addActionListener(e -> {
-            graphPanel.drawCircle = checkBoxCircle.isSelected();
-            graphPanel.repaint();
-        });
-        sliderPanel.add(checkBoxCircle);
-
-        JCheckBox checkBoxExp = new JCheckBox("Exponential", false);
-        checkBoxExp.addActionListener(e -> {
-            graphPanel.drawExp = checkBoxExp.isSelected();
-            graphPanel.repaint();
-        });
-        sliderPanel.add(checkBoxExp);
-
-        JCheckBox checkBoxLog = new JCheckBox("Logarithmic", false);
-        checkBoxLog.addActionListener(e -> {
-            graphPanel.drawLog = checkBoxLog.isSelected();
-            graphPanel.repaint();
-        });
-        sliderPanel.add(checkBoxLog);
-
-        frame.add(sliderPanel, BorderLayout.EAST);
-        frame.setVisible(true);
-    }
-
-    @FunctionalInterface
-    interface Function<T, R> {
-        R apply(T t);
+    public void setRadius(double radius) {
+        this.radius = radius;
+        repaint();
     }
 }
